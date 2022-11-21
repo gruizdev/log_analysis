@@ -1,15 +1,16 @@
 import React from 'react';
 import './App.css';
-import { Layout, Upload, Button, Row, Col } from 'antd';
+import { Layout, Upload, Button, Row, Col, Space } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { RcFile } from 'antd/es/upload';
-import { Pie, Column, ColumnConfig } from '@ant-design/plots';
+import { Pie, Column, Line } from '@ant-design/plots';
 import ILogInfo from './ILogInfo';
-import IRegExLine from './IRegExLine';
 
-function App() {
+import data from './logData.json';
 
-  const [info, setInfo] = React.useState<ILogInfo[]>([]);  
+function App() { 
+
+  const [info, setInfo] = React.useState<ILogInfo[]>(data as ILogInfo[]);  
 
   const onFileUpload = async (file: RcFile) : Promise<string> => {
     const text = await file.text();
@@ -18,53 +19,12 @@ function App() {
     console.log(lines);
     const a = getRequestsPerHour(lines);
     console.log(a);
-    //test(text);
     return text;
-  }
-
-  const test = (rawContent: string) => {
-    const lines = rawContent.split(/\r?\n/);
-    //const regex = /HTTP\b/gm;
-    for(let i = 0; i < lines.length; i++){
-      //let line = lines[i];
-      let line = (' ' + lines[i]).slice(1);
-      if(!/HTTP\b/gm.test(line)){
-        console.log(line);
-      }
-    }
-  }
+  }  
 
   const processFile = (rawContent: string) : ILogInfo[] => {
-
-    console.log("Lines: " + rawContent.split(/\r?\n/).length);
-
-    // const regex = /(?<host>.+)\s\[(?<date>.+)\]\s\"(?<method>\w+)\s(?<url>.+)\s(?<protocol>\w+)\/(?<version>.+)\"\s(?<code>\d+)\s(?<bytes>\d+|\-)/gm;
-    // const lines = rawContent.split(/\r?\n/);
-    // return lines.map<ILogInfo>(l => {
-    //   const match = l.match(regex);
-    //   const groups = match?.groups;
-    //   if(groups){
-    //     const dateParts = groups["date"].split(":");
-    //     return {
-    //       host: groups["host"],
-    //       datetime: {day: dateParts[0], hour: dateParts[1], minute: dateParts[2], second: dateParts[3]},
-    //       request: {method: groups["method"], url: groups["url"], protocol: groups["protocol"], protocol_version: groups["version"]},
-    //       response_code: groups["code"],
-    //       document_size: Number(groups["bytes"])
-    //     }
-    //   }
-    //   else return {
-    //     host: "",
-    //     datetime: {day: "", hour: "", minute: "", second: ""},
-    //     request: {method: "", url: "", protocol: "", protocol_version: ""},
-    //     response_code: "200",
-    //     document_size: 0      
-    //   };
-    // });
-    
-    //const regex = /(?<host>.+)\s\[(?<date>.+)\]\s\"(?<method>\w+)\s(?<url>.+)\s(?<protocol>\w+)\/(?<version>.+)\"\s(?<code>\d+)\s(?<bytes>\d+|\-)\n/gm;
-    const regex = /(?<host>.+)\s\[(?<date>.+)\]\s\"(?<method>\w+)\s((?<url>.+)\s(?<protocol>\w+)\/(?<version>.+)|(?<fullUrl>.+))\"\s(?<code>\d+)\s(?<bytes>\d+|\-)/gm;
-    //const urlRegex = /(?<url>.+)\s(?<protocol>\w+)\/(?<version>.+)|(?<fullUrl>.+)/gm;
+        
+    const regex = /(?<host>.+)\s\[(?<date>.+)\]\s"(?<method>\w+)\s((?<url>.+)\s(?<protocol>\w+)\/(?<version>.+)|(?<fullUrl>.+))"\s(?<code>\d+)\s(?<bytes>\d+|-)/gm;
 
     const result = Array.from(rawContent.matchAll(regex));    
 
@@ -72,7 +32,6 @@ function App() {
       const groups = match?.groups;
       if(groups){
         const dateParts = groups["date"].split(":");
-        const urlParts = groups["url"];
 
         return {
           host: groups["host"],
@@ -135,90 +94,94 @@ function App() {
   }
 
   const getRequestsPerHour = (lines: ILogInfo[]) => {
-    return lines.reduce((previous: any, current) => {
-      const dayHour = `${current.datetime.day}-${current.datetime.hour}`;
+    const requests = lines.reduce((previous: any, current) => {
+      const dayHour = `${current.datetime.day}-${current.datetime.hour}:00`;
       if(previous[dayHour] >= 0) previous[dayHour] = previous[dayHour] + 1;
       else previous[dayHour] = 0;
       return previous;
     }, {});
 
+    return Object.entries(requests).map(x => ({date: x[0], requests: x[1]}));
   }
 
-  const config = {
-    appendPadding: 10,    
-    angleField: 'value',
-    colorField: 'type',
-    radius: 0.8,
-    label: {
-      type: 'outer',
-    },
-    interactions: [
-      {
-        type: 'element-active',
-      },
-    ],
-  };
-
-  const configColumns : ColumnConfig = {
-    data: getLowSizeRequestsSize(info),
-    xField: 'size',
-    yField: 'value',
-    
-    appendPadding: 10,
-    label: {
-      position: 'middle',
-      style: {
-        fill: '#FFFFFF',
-        opacity: 0.6,
-      },
-    },
-    xAxis: {
-      title: {text:"Size in bytes"},      
-    },
-    yAxis: {
-      title: {text: "Number of requests"}
-    }    
-  };
+  const getRequestsPerMinute = (lines: ILogInfo[]) => {
+    const requests = lines.reduce((previous: any, current) => {
+      const dayHourMinute = `${current.datetime.day}-${current.datetime.hour}:${current.datetime.minute}`;
+      if(previous[dayHourMinute] >= 0) previous[dayHourMinute] = previous[dayHourMinute] + 1;
+      else previous[dayHourMinute] = 0;
+      return previous;
+    }, {});
+    return Object.entries(requests).map(x => ({date: x[0], requests: x[1]}));
+  }  
 
   return (
     <Layout>
       <Layout.Header>
-        <Upload action={onFileUpload} showUploadList={false} >
+        {/* <Upload action={onFileUpload} showUploadList={false} >
           <Button icon={<UploadOutlined />}>Click to Upload</Button>
-        </Upload>
+        </Upload> */}
+        
+        <Row justify={'center'}><h1 style={{color: 'white'}}>UFirst assignment</h1></Row>
       </Layout.Header>
       <Layout.Content style={{margin: "10px"}}>        
         {info.length > 0 ? 
           <>
-            <Row gutter={[16, 16]} justify={'space-evenly'}>
-              <Col xs={22} sm={11} style={{border: "1px dotted"}}>
+            <Row gutter={[16, 16]} justify={'center'}>
+              <Col xs={22} style={{border: "1px dotted"}}>
                 <h2>Requests per minute</h2>
-                
-
+                <Line 
+                  data={getRequestsPerMinute(info)}
+                  padding='auto'
+                  xField='date'
+                  yField='requests'
+                  xAxis={{tickCount: 5, title: {text: "Day and time"}}}
+                  yAxis={{title: {text: "Number of requests"}}}
+                  smooth={true}
+                />
               </Col>
               <Col xs={22} sm={11} style={{border: "1px dotted"}}>
                 <h2>Distribution of HTTP methods</h2>
                 <Pie 
                   data={getHttpMethodsChartData(info)} 
-                  {...config}
+                  appendPadding={10}
+                  angleField='value'
+                  colorField='type'
+                  radius={0.8}
+                  label={{type: 'outer'}}
+                  interactions={[{type: 'element-active'}]}
                 />                
               </Col>
               <Col xs={22} sm={11} style={{border: "1px dotted"}}>
                 <h2>Distribution of HTTP answer codes</h2>
                 <Pie 
                   data={getHttpCodesChartData(info)} 
-                  {...config}
+                  appendPadding={10}
+                  angleField='value'
+                  colorField='type'
+                  radius={0.8}
+                  label={{type: 'outer'}}
+                  interactions={[{type: 'element-active'}]}
                 />                
               </Col>
-              <Col xs={22} sm={11} style={{border: "1px dotted"}}>
+              <Col xs={22} style={{border: "1px dotted"}}>
                 <h2>Distribution of the size of the answer of all requests with code 200 and size &lt;1000B</h2>
                 <Column
-                  {...configColumns}
-                />
-                
+                  data={getLowSizeRequestsSize(info)}
+                  xField='size'
+                  yField='value'
+                  appendPadding={10}
+                  label={{
+                    position: 'middle',
+                    style: {
+                      fill: '#FFFFFF',
+                      opacity: 0.6,
+                    },
+                  }}
+                  xAxis={{title: {text:"Size in bytes"}}}
+                  yAxis={{title: {text: "Number of requests"}}}
+                  />                
               </Col>
-            </Row>
-            
+            </Row>            
           </> 
           :
           <h1>Please upload a log file above</h1>
