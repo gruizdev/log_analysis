@@ -137,6 +137,7 @@ function App() {
                   xAxis={{tickCount: 5, title: {text: "Day and time"}}}
                   yAxis={{title: {text: "Number of requests"}}}
                   smooth={true}
+                  slider={{start: 0, end: 1}}
                 />
               </Col>
               <Col xs={22} sm={11} style={{border: "1px dotted"}}>
