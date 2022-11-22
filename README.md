@@ -1,3 +1,16 @@
+# UFirst Assignment
+
+Here is the technical assignment provided by UFirst. This project consists of a React app that reads a json file that contains the data of the log file provided.
+
+### Data import script
+To generate a json file with the data I have created a node script that gets the path of the log file as first parameter and generates an output.json file. Find the script in the "public" folder with the name "ParseLog.js". To run it use:
+`node ParseLog.js epa-http.txt`
+
+### React app
+To analyse the data there is a simple React app with 4 charts. You can preview it [here](https://gruizdev.github.io/log_analysis/)
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
