@@ -7,7 +7,8 @@ To generate a json file with the data I have created a node script that gets the
 `node ParseLog.js epa-http.txt`
 
 ### React app
-To analyse the data there is a simple React app with 4 charts. You can preview it [here](https://gruizdev.github.io/log_analysis/)
+To analyse the data there is a simple React app with 4 charts. You can preview it [here](https://gruizdev.github.io/log_analysis/).
+To build the charts and components I have used [Ant Design](https://ant.design/)
 
 ---
 
